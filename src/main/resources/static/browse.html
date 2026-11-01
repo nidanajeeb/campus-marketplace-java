@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browse Items — Campus Marketplace</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="uploads/demo/demo-calculator.jpg">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="index.html" class="site-logo">
+        <div class="logo-icon-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+        </div>
+        <span>Campus Marketplace</span>
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="site-nav">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="browse.html" class="nav-link active">Browse Items</a>
+        <a href="sell.html" class="nav-link">Sell an Item</a>
+        <a href="my-listings.html" id="nav-my-listings" class="nav-link" style="display:none;">My Listings</a>
+      </nav>
+
+      <!-- Desktop Auth -->
+      <div id="header-auth-section" class="header-auth"></div>
+
+      <!-- Mobile Button -->
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile Drawer -->
+    <div id="mobile-drawer" class="mobile-nav-drawer">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="browse.html" class="nav-link active">Browse Items</a>
+      <a href="sell.html" class="nav-link">Sell an Item</a>
+      <a href="my-listings.html" class="nav-link">My Listings</a>
+      <div id="mobile-auth-section"></div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="section-container" style="padding-top:1.5rem;">
+    <h1 style="font-size:1.75rem;font-weight:800;color:var(--text-main);margin-bottom:1rem;">Browse Items</h1>
+
+    <!-- Filter Control Bar -->
+    <div class="filter-bar">
+      <!-- Search Input -->
+      <input type="text" id="filter-q" class="filter-input" placeholder="Search by name, category or description…">
+
+      <!-- Category Filter -->
+      <select id="filter-category" class="filter-input">
+        <option value="">All categories</option>
+        <option value="Books">Books</option>
+        <option value="Electronics">Electronics</option>
+        <option value="Engineering Tools">Engineering Tools</option>
+        <option value="Lab Supplies">Lab Supplies</option>
+        <option value="Stationery">Stationery</option>
+        <option value="Accessories">Accessories</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <!-- Min Price -->
+      <input type="number" id="filter-min" class="filter-input" placeholder="Min ₹" min="0">
+
+      <!-- Max Price -->
+      <input type="number" id="filter-max" class="filter-input" placeholder="Max ₹" min="0">
+
+      <!-- Sort -->
+      <select id="filter-sort" class="filter-input">
+        <option value="newest">Newest first</option>
+        <option value="price-asc">Price: low to high</option>
+        <option value="price-desc">Price: high to low</option>
+      </select>
+
+      <!-- Availability -->
+      <select id="filter-status" class="filter-input">
+        <option value="AVAILABLE">Available only</option>
+        <option value="SOLD">Sold only</option>
+        <option value="all">All items</option>
+      </select>
+
+      <!-- Clear/Reset Button -->
+      <button type="button" class="btn btn-outline btn-sm" onclick="resetFilters()">Reset</button>
+    </div>
+
+    <!-- Results Status Count -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+      <p id="results-count" style="font-size:0.875rem;color:var(--text-muted);">Loading items…</p>
+    </div>
+
+    <!-- Products Grid -->
+    <div id="browse-grid" class="products-grid">
+      <!-- Injected via JavaScript -->
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div><strong>Campus Circular Market</strong> &bull; College Java Mini-Project</div>
+      <div>Built with HTML5, CSS3, Vanilla JavaScript, Spring Boot & MySQL</div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    let debounceTimer = null;
+
+    function getQueryParams() {
+      const p = new URLSearchParams(window.location.search);
+      return {
+        q: p.get('q') || '',
+        category: p.get('category') || '',
+        min: p.get('min') || '',
+        max: p.get('max') || '',
+        sort: p.get('sort') || 'newest',
+        status: p.get('status') || 'AVAILABLE'
+      };
+    }
+
+    function syncInputsWithUrl() {
+      const p = getQueryParams();
+      document.getElementById('filter-q').value = p.q;
+      document.getElementById('filter-category').value = p.category;
+      document.getElementById('filter-min').value = p.min;
+      document.getElementById('filter-max').value = p.max;
+      document.getElementById('filter-sort').value = p.sort;
+      document.getElementById('filter-status').value = p.status;
+    }
+
+    async function fetchAndRenderItems() {
+      const q = document.getElementById('filter-q').value.trim();
+      const category = document.getElementById('filter-category').value;
+      const min = document.getElementById('filter-min').value;
+      const max = document.getElementById('filter-max').value;
+      const sort = document.getElementById('filter-sort').value;
+      const status = document.getElementById('filter-status').value;
+
+      // Update URL search parameters without page reload
+      const searchParams = new URLSearchParams();
+      if (q) searchParams.set('q', q);
+      if (category) searchParams.set('category', category);
+      if (min) searchParams.set('min', min);
+      if (max) searchParams.set('max', max);
+      if (sort && sort !== 'newest') searchParams.set('sort', sort);
+      if (status && status !== 'AVAILABLE') searchParams.set('status', status);
+
+      const newUrl = `${window.location.pathname}${searchParams.toString() ? '?' + searchParams.toString() : ''}`;
+      window.history.replaceState({}, '', newUrl);
+
+      const grid = document.getElementById('browse-grid');
+      const countEl = document.getElementById('results-count');
+
+      try {
+        const queryParams = new URLSearchParams();
+        if (q) queryParams.set('q', q);
+        if (category) queryParams.set('category', category);
+        if (min) queryParams.set('min', min);
+        if (max) queryParams.set('max', max);
+        if (sort) queryParams.set('sort', sort);
+        if (status) queryParams.set('status', status);
+
+        const items = await api.get(`/items?${queryParams.toString()}`);
+
+        countEl.textContent = `Showing ${items.length} item${items.length === 1 ? '' : 's'}`;
+
+        if (!items || items.length === 0) {
+          grid.innerHTML = `
+            <div style="grid-column: 1 / -1; padding: 4rem 2rem; text-align: center; background: #fff; border-radius: var(--radius-lg); border: 1px solid var(--border);">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto;color:var(--text-muted);display:block;">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+              </svg>
+              <h3 style="font-size:1.15rem;font-weight:700;margin-top:1rem;color:var(--text-main);">No matching listings found</h3>
+              <p style="font-size:0.875rem;color:var(--text-muted);margin-top:0.25rem;">Try relaxing your search terms or clearing price filters.</p>
+              <button class="btn btn-outline btn-sm" style="margin-top:1.25rem;" onclick="resetFilters()">Clear all filters</button>
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = items.map(item => `
+          <article class="item-card ${item.status === 'SOLD' ? 'is-sold' : ''}">
+            <a href="item-details.html?id=${item.itemId}" class="item-card-image-wrap">
+              <img src="${item.imageUrl || 'uploads/demo/demo-textbook.jpg'}" alt="${escapeHtml(item.itemName)}" class="item-card-image" onerror="this.src='uploads/demo/demo-textbook.jpg'">
+              <div class="card-badge-container">
+                ${item.status === 'SOLD' ? '<span class="badge badge-sold">Sold</span>' : '<span class="badge badge-available">Available</span>'}
+                ${item.demo ? '<span class="badge badge-demo">Demo</span>' : ''}
+              </div>
+            </a>
+            <div class="item-card-body">
+              <span class="item-card-category">${escapeHtml(item.category)}</span>
+              <h3 class="item-card-title">
+                <a href="item-details.html?id=${item.itemId}">${escapeHtml(item.itemName)}</a>
+              </h3>
+              <p class="item-card-price">${formatPrice(item.price)}</p>
+              <p class="item-card-meta">${escapeHtml(item.sellerName)} &bull; ${formatDate(item.createdAt)}</p>
+              <div class="item-card-action">
+                <a href="item-details.html?id=${item.itemId}" class="btn btn-outline btn-sm" style="width:100%;">View Details</a>
+              </div>
+            </div>
+          </article>
+        `).join('');
+
+      } catch (err) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; padding: 2rem; text-align: center; color: #ef4444; background: #fee2e2; border-radius: var(--radius-md);">
+            Failed to load listings. Check if Spring Boot backend is active.
+          </div>
+        `;
+      }
+    }
+
+    function onFilterChange() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(fetchAndRenderItems, 250);
+    }
+
+    function resetFilters() {
+      document.getElementById('filter-q').value = '';
+      document.getElementById('filter-category').value = '';
+      document.getElementById('filter-min').value = '';
+      document.getElementById('filter-max').value = '';
+      document.getElementById('filter-sort').value = 'newest';
+      document.getElementById('filter-status').value = 'AVAILABLE';
+      fetchAndRenderItems();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      syncInputsWithUrl();
+      fetchAndRenderItems();
+
+      // Attach event listeners
+      document.getElementById('filter-q').addEventListener('input', onFilterChange);
+      document.getElementById('filter-category').addEventListener('change', onFilterChange);
+      document.getElementById('filter-min').addEventListener('input', onFilterChange);
+      document.getElementById('filter-max').addEventListener('input', onFilterChange);
+      document.getElementById('filter-sort').addEventListener('change', onFilterChange);
+      document.getElementById('filter-status').addEventListener('change', onFilterChange);
+    });
+  </script>
+</body>
+</html>
+

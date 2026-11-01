@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Listing — Campus Marketplace</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="uploads/demo/demo-calculator.jpg">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="index.html" class="site-logo">
+        <div class="logo-icon-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+        </div>
+        <span>Campus Marketplace</span>
+      </a>
+
+      <nav class="site-nav">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="browse.html" class="nav-link">Browse Items</a>
+        <a href="sell.html" class="nav-link">Sell an Item</a>
+        <a href="my-listings.html" id="nav-my-listings" class="nav-link" style="display:none;">My Listings</a>
+      </nav>
+
+      <div id="header-auth-section" class="header-auth"></div>
+
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div id="mobile-drawer" class="mobile-nav-drawer">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="browse.html" class="nav-link">Browse Items</a>
+      <a href="sell.html" class="nav-link">Sell an Item</a>
+      <a href="my-listings.html" class="nav-link">My Listings</a>
+      <div id="mobile-auth-section"></div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="section-container" style="padding-top:2rem;">
+    <div style="max-width:800px;margin:0 auto;">
+      <h1 style="font-size:1.75rem;font-weight:800;color:var(--text-main);">Edit Listing</h1>
+      <p style="color:var(--text-muted);font-size:0.95rem;margin-top:0.25rem;">
+        Update details, price or upload a refreshed photograph.
+      </p>
+
+      <div id="edit-content" style="margin-top:1.5rem;">
+        <p style="text-align:center;padding:3rem;color:var(--text-muted);">Loading listing…</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div><strong>Campus Circular Market</strong> &bull; College Java Mini-Project</div>
+      <div>Built with HTML5, CSS3, Vanilla JavaScript, Spring Boot & MySQL</div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    let selectedImageFile = null;
+    let currentItemId = null;
+
+    async function initEditPage() {
+      const container = document.getElementById('edit-content');
+      const params = new URLSearchParams(window.location.search);
+      currentItemId = params.get('id');
+
+      if (!currentItemId) {
+        container.innerHTML = `
+          <div class="form-container" style="text-align:center;padding:3rem;">
+            <h2>No listing ID provided</h2>
+            <a href="browse.html" class="btn btn-outline" style="margin-top:1rem;">Back to Browse</a>
+          </div>
+        `;
+        return;
+      }
+
+      const user = await checkAuthStatus();
+      if (!user) {
+        window.location.href = `auth.html?redirect=edit.html?id=${currentItemId}`;
+        return;
+      }
+
+      try {
+        const item = await api.get(`/items/${currentItemId}`);
+        if (!item) throw new Error('Listing not found');
+
+        if (!item.canEdit) {
+          container.innerHTML = `
+            <div class="form-container" style="text-align:center;padding:3rem;">
+              <h2 style="font-size:1.25rem;font-weight:700;">You cannot edit this listing</h2>
+              <p style="color:var(--text-muted);margin-top:0.35rem;">Only the student who listed this item or an authorized administrator can modify it.</p>
+              <a href="browse.html" class="btn btn-outline" style="margin-top:1.25rem;">Back to Browse</a>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="form-container">
+            <form id="edit-form" onsubmit="handleEditSubmit(event)" class="form-grid-layout" novalidate>
+              <div>
+                <span class="form-label">Product photo</span>
+                <label for="image-input" class="image-dropzone" id="dropzone">
+                  <img id="image-preview" src="${item.imageUrl || 'uploads/demo/demo-textbook.jpg'}" alt="Product preview" style="display:block;" onerror="this.src='uploads/demo/demo-textbook.jpg'">
+                </label>
+                <input type="file" id="image-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="handleImageSelect(event)">
+                <button type="button" class="btn btn-outline btn-sm" style="width:100%;margin-top:0.5rem;" onclick="document.getElementById('image-input').click()">
+                  Change photo
+                </button>
+                <p id="image-error" style="color:#ef4444;font-size:0.75rem;margin-top:0.35rem;"></p>
+              </div>
+
+              <div>
+                <div class="form-group">
+                  <label class="form-label" for="item-name">Item Name *</label>
+                  <input type="text" id="item-name" class="form-control" value="${escapeHtml(item.itemName)}" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="item-category">Category *</label>
+                  <select id="item-category" class="form-control" required>
+                    <option value="Books" ${item.category === 'Books' ? 'selected' : ''}>Books</option>
+                    <option value="Electronics" ${item.category === 'Electronics' ? 'selected' : ''}>Electronics</option>
+                    <option value="Engineering Tools" ${item.category === 'Engineering Tools' ? 'selected' : ''}>Engineering Tools</option>
+                    <option value="Lab Supplies" ${item.category === 'Lab Supplies' ? 'selected' : ''}>Lab Supplies</option>
+                    <option value="Stationery" ${item.category === 'Stationery' ? 'selected' : ''}>Stationery</option>
+                    <option value="Accessories" ${item.category === 'Accessories' ? 'selected' : ''}>Accessories</option>
+                    <option value="Other" ${item.category === 'Other' ? 'selected' : ''}>Other</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="item-price">Price (₹) *</label>
+                  <input type="number" id="item-price" class="form-control" value="${item.price}" min="0" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="item-desc">Description *</label>
+                  <textarea id="item-desc" class="form-control" required>${escapeHtml(item.description)}</textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="seller-name">Your Name *</label>
+                  <input type="text" id="seller-name" class="form-control" value="${escapeHtml(item.sellerName)}" required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="seller-contact">Contact Details *</label>
+                  <input type="text" id="seller-contact" class="form-control" value="${escapeHtml(item.sellerContact)}" required>
+                </div>
+
+                <div style="display:flex;gap:0.75rem;margin-top:1.5rem;">
+                  <button type="submit" id="save-btn" class="btn btn-accent btn-lg" style="flex:1;">
+                    Save changes
+                  </button>
+                  <a href="item-details.html?id=${item.itemId}" class="btn btn-outline btn-lg">
+                    Cancel
+                  </a>
+                </div>
+              </div>
+            </form>
+          </div>
+        `;
+
+      } catch (err) {
+        container.innerHTML = `
+          <div class="form-container" style="text-align:center;padding:3rem;">
+            <h2>Failed to load listing for editing</h2>
+            <p style="color:var(--text-muted);margin-top:0.25rem;">${escapeHtml(err.message)}</p>
+            <a href="browse.html" class="btn btn-outline" style="margin-top:1rem;">Back to Browse</a>
+          </div>
+        `;
+      }
+    }
+
+    function handleImageSelect(e) {
+      const file = e.target.files && e.target.files[0];
+      const errEl = document.getElementById('image-error');
+      errEl.textContent = '';
+      if (!file) return;
+
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        errEl.textContent = 'Only JPG, PNG or WebP images are supported.';
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        errEl.textContent = 'Image must be under 10 MB.';
+        return;
+      }
+
+      selectedImageFile = file;
+      const preview = document.getElementById('image-preview');
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        preview.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function handleEditSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('save-btn');
+
+      const name = document.getElementById('item-name').value.trim();
+      const category = document.getElementById('item-category').value;
+      const price = document.getElementById('item-price').value.trim();
+      const desc = document.getElementById('item-desc').value.trim();
+      const sellerName = document.getElementById('seller-name').value.trim();
+      const sellerContact = document.getElementById('seller-contact').value.trim();
+
+      if (!name || !category || !price || !desc || !sellerName || !sellerContact) {
+        showToast('Please fill out all required fields.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Saving changes…';
+
+      try {
+        const formData = new FormData();
+        formData.append('itemName', name);
+        formData.append('category', category);
+        formData.append('price', price);
+        formData.append('description', desc);
+        formData.append('sellerName', sellerName);
+        formData.append('sellerContact', sellerContact);
+
+        if (selectedImageFile) {
+          formData.append('image', selectedImageFile);
+        }
+
+        await api.putMultipart(`/items/${currentItemId}`, formData);
+        showToast('Listing updated successfully!', 'success');
+        setTimeout(() => {
+          window.location.href = `item-details.html?id=${currentItemId}`;
+        }, 500);
+
+      } catch (err) {
+        showToast(err.message || 'Failed to update listing', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Save changes';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initEditPage);
+  </script>
+</body>
+</html>
+

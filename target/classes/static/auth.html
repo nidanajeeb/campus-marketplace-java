@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in — Campus Marketplace</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="uploads/demo/demo-calculator.jpg">
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="index.html" class="site-logo">
+        <div class="logo-icon-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+            <path d="M3 6h18" />
+            <path d="M16 10a4 4 0 0 1-8 0" />
+          </svg>
+        </div>
+        <span>Campus Marketplace</span>
+      </a>
+
+      <nav class="site-nav">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="browse.html" class="nav-link">Browse Items</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Auth Box -->
+  <main class="section-container" style="padding-top:3rem;">
+    <div
+      style="max-width:420px;margin:0 auto;background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem;box-shadow:var(--shadow-card);">
+
+      <!-- Tab Headers -->
+      <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:1.5rem;">
+        <button id="tab-signin" class="btn btn-ghost"
+          style="flex:1;border-bottom:2px solid var(--primary);border-radius:0;font-weight:700;"
+          onclick="switchMode('signin')">
+          Sign In
+        </button>
+        <button id="tab-signup" class="btn btn-ghost"
+          style="flex:1;border-bottom:2px solid transparent;border-radius:0;color:var(--text-muted);"
+          onclick="switchMode('signup')">
+          Create Account
+        </button>
+      </div>
+
+      <!-- Error box -->
+      <div id="auth-error-box"
+        style="display:none;background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;padding:0.65rem 0.85rem;border-radius:var(--radius-sm);font-size:0.8125rem;margin-bottom:1rem;">
+      </div>
+
+      <!-- Form -->
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+        <!-- Full Name (Only for signup) -->
+        <div id="group-fullname" class="form-group" style="display:none;">
+          <label class="form-label" for="auth-fullname">Full Name</label>
+          <input type="text" id="auth-fullname" class="form-control" placeholder="e.g. Aarav Sharma">
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label class="form-label" for="auth-email">College Email</label>
+          <input type="email" id="auth-email" class="form-control" placeholder="e.g. yourname@campus.edu" required
+            autocomplete="email">
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label class="form-label" for="auth-password">Password</label>
+          <input type="password" id="auth-password" class="form-control" placeholder="••••••••" required
+            autocomplete="current-password">
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="btn btn-primary btn-lg"
+          style="width:100%;margin-top:0.75rem;">
+          Sign In
+        </button>
+      </form>
+
+      <!-- Demo Credentials Reference Note for Viva -->
+      <div
+        style="margin-top:1.5rem;padding:0.85rem;background:#f8fafc;border-radius:var(--radius-sm);border:1px solid #e2e8f0;font-size:0.75rem;color:var(--text-muted);">
+        <strong style="color:var(--text-main);display:block;margin-bottom:0.25rem;">Default Demo Credentials:</strong>
+        <div>&bull; <strong>Admin:</strong> admin@campus.edu / admin123</div>
+        <div>&bull; <strong>Student:</strong> student@campus.edu / student123</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div><strong>Campus Circular Market</strong> &bull; College Java Mini-Project</div>
+      <div>Built with HTML5, CSS3, Vanilla JavaScript, Spring Boot & MySQL</div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script>
+    let mode = 'signin';
+
+    function switchMode(newMode) {
+      mode = newMode;
+      const tabSignIn = document.getElementById('tab-signin');
+      const tabSignUp = document.getElementById('tab-signup');
+      const groupFullName = document.getElementById('group-fullname');
+      const btn = document.getElementById('auth-submit-btn');
+      const errBox = document.getElementById('auth-error-box');
+
+      errBox.style.display = 'none';
+
+      if (mode === 'signin') {
+        tabSignIn.style.borderBottomColor = 'var(--primary)';
+        tabSignIn.style.fontWeight = '700';
+        tabSignIn.style.color = 'var(--text-main)';
+
+        tabSignUp.style.borderBottomColor = 'transparent';
+        tabSignUp.style.fontWeight = '500';
+        tabSignUp.style.color = 'var(--text-muted)';
+
+        groupFullName.style.display = 'none';
+        btn.textContent = 'Sign In';
+      } else {
+        tabSignUp.style.borderBottomColor = 'var(--primary)';
+        tabSignUp.style.fontWeight = '700';
+        tabSignUp.style.color = 'var(--text-main)';
+
+        tabSignIn.style.borderBottomColor = 'transparent';
+        tabSignIn.style.fontWeight = '500';
+        tabSignIn.style.color = 'var(--text-muted)';
+
+        groupFullName.style.display = 'block';
+        btn.textContent = 'Create Account';
+      }
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const errBox = document.getElementById('auth-error-box');
+      const btn = document.getElementById('auth-submit-btn');
+
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const fullName = document.getElementById('auth-fullname').value.trim();
+
+      errBox.style.display = 'none';
+      btn.disabled = true;
+
+      const params = new URLSearchParams(window.location.search);
+      const redirectUrl = params.get('redirect') || 'index.html';
+
+      try {
+        if (mode === 'signin') {
+          btn.textContent = 'Signing in…';
+          await api.post('/auth/login', { email, password });
+          showToast('Welcome back!', 'success');
+        } else {
+          if (!fullName) {
+            throw new Error('Please enter your full name.');
+          }
+          btn.textContent = 'Creating account…';
+          await api.post('/auth/register', { email, password, fullName });
+          showToast('Account created successfully!', 'success');
+        }
+
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 500);
+
+      } catch (err) {
+        errBox.textContent = err.message || 'Authentication failed';
+        errBox.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = mode === 'signin' ? 'Sign In' : 'Create Account';
+      }
+    }
+
+    // Auto-fill redirect if passed
+    document.addEventListener('DOMContentLoaded', async () => {
+      // If already logged in, redirect immediately
+      try {
+        const user = await api.get('/auth/me');
+        if (user && user.userId) {
+          const params = new URLSearchParams(window.location.search);
+          window.location.href = params.get('redirect') || 'index.html';
+        }
+      } catch { }
+    });
+  </script>
+</body>
+
+</html>
